@@ -8,6 +8,6 @@ public static class JsonOptions
     public static readonly JsonSerializerOptions Default = new()
     {
         PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter(), new DateOnlyJsonConverter() }
     };
 }
