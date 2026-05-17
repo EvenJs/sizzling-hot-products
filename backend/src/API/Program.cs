@@ -69,3 +69,5 @@ app.MapGet("/api/products/sizzling-hot", async (
 .Produces(400);
 
 app.Run();
+
+public partial class Program { }
