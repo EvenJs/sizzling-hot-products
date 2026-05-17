@@ -16,14 +16,11 @@ jobs:
         with:
           dotnet-version: "8.0.x"
       - name: Restore dependencies
-        run: dotnet restore SizzlingHot.sln
-        working-directory: backend
+        run: dotnet restore
       - name: Build
-        run: dotnet build SizzlingHot.sln --no-restore
-        working-directory: backend
+        run: dotnet build --no-restore
       - name: Run tests
-        run: dotnet test SizzlingHot.sln --no-build
-        working-directory: backend
+        run: dotnet test --no-build
 
   frontend-tests:
     name: Frontend Unit Tests
