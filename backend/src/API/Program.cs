@@ -41,33 +41,31 @@ app.UseExceptionHandler(errorApp =>
 });
 app.UseCors("Frontend");
 
-app.MapGet("/api/products/sizzling-hot/daily", async (ISizzlingHotService service) =>
+
+app.MapGet("/api/products/sizzling-hot", async (
+    ISizzlingHotService service,
+    string? from,
+    string? to) =>
 {
-    var from = new DateOnly(2026, 4, 21);
-    var to = new DateOnly(2026, 4, 23);
+    var fromDate = DateOnly.TryParse(from, out var parsedFrom)
+     ? parsedFrom
+     : new DateOnly(2026, 4, 21);
 
-    var result = await service.GetDailyTopProductsAsync(from, to);
+    var toDate = DateOnly.TryParse(to, out var parsedTo)
+        ? parsedTo
+        : new DateOnly(2026, 4, 23);
+
+    if (fromDate > toDate)
+        return Results.BadRequest("'from' date must be before 'to' date.");
+    var result = await service.GetSizzlingHotAsync(fromDate, toDate);
     return Results.Ok(result);
-})
-.WithName("GetDailyTopProducts")
-.WithSummary("Get top sizzling hot product per day")
-.WithDescription("Returns the top selling product for each day in the date range based on unique customer sales.")
-.WithTags("Products")
-.Produces<IEnumerable<DailyResult>>(200);
 
-app.MapGet("/api/products/sizzling-hot/period", async (ISizzlingHotService service) =>
-{
-    var from = new DateOnly(2026, 4, 21);
-    var to = new DateOnly(2026, 4, 23);
-
-    var result = await service.GetPeriodTopProductAsync(from, to);
-    return Results.Ok(result);
 })
-.WithName("GetPeriodTopProduct")
-.WithSummary("Get top sizzling hot product over a period")
-.WithDescription("Returns the top selling product across the entire date range based on unique customer sales.")
+.WithName("GetSizzlingHotProducts")
+.WithSummary("Get sizzling hot products")
+.WithDescription("Returns the top selling product per day and over the selected period.")
 .WithTags("Products")
-.Produces<PeriodResult>(200)
-.Produces(204);
+.Produces<SizzlingHotResult>(200)
+.Produces(400);
 
 app.Run();

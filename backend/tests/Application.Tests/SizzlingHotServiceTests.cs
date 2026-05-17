@@ -24,7 +24,7 @@ public class SizzlingHotServiceTests
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_ReturnsProductWithMostSales()
+    public async Task GetSizzlingHotAsync_Daily_ReturnsProductWithMostSales()
     {
         // Arrange 
         var products = new List<Product>
@@ -49,15 +49,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("Hammer");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_CountsProductOncePerOrder_RegardlessOfQuantity()
+    public async Task GetSizzlingHotAsync_Daily_CountsProductOncePerOrder_RegardlessOfQuantity()
     {
         // Arrange 
         var products = new List<Product>
@@ -81,15 +81,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("Hammer");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_DeduplicatesSalesForSameCustomerOnSameDay()
+    public async Task GetSizzlingHotAsync_Daily_DeduplicatesSalesForSameCustomerOnSameDay()
     {
         // Arrange 
         var products = new List<Product>
@@ -115,15 +115,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("Measure");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_ExcludesCancelledOrders()
+    public async Task GetSizzlingHotAsync_Daily_ExcludesCancelledOrders()
     {
         // Arrange 
         var products = new List<Product>
@@ -150,15 +150,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("Measure");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_SelectsAlphabeticallyFirstProduct_WhenSalesAreTied()
+    public async Task GetSizzlingHotAsync_Daily_SelectsAlphabeticallyFirstProduct_WhenSalesAreTied()
     {
         // Arrange 
         var products = new List<Product>
@@ -182,15 +182,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("BBQ");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_IgnoresCancellation_WhenNoMatchingCompletedOrder()
+    public async Task GetSizzlingHotAsync_Daily_IgnoresCancellation_WhenNoMatchingCompletedOrder()
     {
         // Arrange 
         var products = new List<Product>
@@ -214,15 +214,15 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        var topProduct = result.First();
+        var topProduct = result.Daily.First();
         topProduct.Product.Name.Should().Be("Hammer");
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_OmitsDay_WhenAllOrdersForThatDayAreCancelled()
+    public async Task GetSizzlingHotAsync_Daily_OmitsDay_WhenAllOrdersForThatDayAreCancelled()
     {
         // Arrange 
         var products = new List<Product>
@@ -246,14 +246,14 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Assert
-        result.Should().BeEmpty();
+        result.Daily.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetPeriodTopProductAsync_ReturnsNull_WhenAllOrdersAreCancelled()
+    public async Task GetSizzlingHotAsync_Period_IsNull_WhenAllOrdersAreCancelled()
     {
         // Arrange 
         var products = new List<Product>
@@ -277,14 +277,14 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetPeriodTopProductAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Result 
-        result.Should().BeNull();
+        result.Period.Should().BeNull();
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_ReturnsEmpty_WhenOrdersListIsEmpty()
+    public async Task GetSizzlingHotAsync_Daily_ReturnsEmpty_WhenOrdersListIsEmpty()
     {
         // Arrange
         var products = new List<Product>
@@ -304,14 +304,14 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Result 
-        result.Should().BeEmpty();
+        result.Daily.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_ReturnsEmpty_WhenProductsListIsEmpty()
+    public async Task GetSizzlingHotAsync_Daily_ReturnsEmpty_WhenProductsListIsEmpty()
     {
         // Arrange
         var products = new List<Product>();
@@ -330,14 +330,14 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetDailyTopProductsAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Result 
-        result.Should().BeEmpty();
+        result.Daily.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetDailyTopProductsAsync_SkipsEntry_WhenProductIdNotFoundInProductsList()
+    public async Task GetSizzlingHotAsync_Daily_SkipsEntry_WhenProductIdNotFoundInProductsList()
     {
         // Arrange 
         var products = new List<Product>
@@ -360,9 +360,9 @@ public class SizzlingHotServiceTests
         var service = new SizzlingHotService(_orderRepository, _productRepository);
 
         // Act
-        var result = await service.GetPeriodTopProductAsync(fromDate, toDate);
+        var result = await service.GetSizzlingHotAsync(fromDate, toDate);
 
         // Result 
-        result.Should().BeNull();
+        result.Daily.Should().BeEmpty();
     }
 }

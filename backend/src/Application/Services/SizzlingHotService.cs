@@ -21,42 +21,33 @@ public class SizzlingHotService : ISizzlingHotService
         _productRepository = productRepository;
     }
 
-    public async Task<IEnumerable<DailyResult>> GetDailyTopProductsAsync(DateOnly from, DateOnly to)
+    public async Task<SizzlingHotResult> GetSizzlingHotAsync(DateOnly from, DateOnly to)
     {
         var orders = await _orderRepository.GetAllAsync();
         var products = await _productRepository.GetAllAsync();
 
         var validOrders = ResolveCancelledOrders(orders);
-        var sales = GetDeduplicatedSales(validOrders);
+        var sales = GetDeduplicatedSales(validOrders)
+           .Where(s => s.Date >= from && s.Date <= to);
 
-        var results = new List<DailyResult>();
+        var dailyResult = new List<DailyResult>();
 
         for (var date = from; date <= to; date = date.AddDays(1))
         {
             var dailySales = sales.Where(s => s.Date == date);
-            var topProduct = GetTopProduct(dailySales, products);
+            var dailyTopProduct = GetTopProduct(dailySales, products);
 
-            if (topProduct != null)
+            if (dailyTopProduct != null)
             {
-                results.Add(new DailyResult(date, topProduct));
+                dailyResult.Add(new DailyResult(date, dailyTopProduct));
             }
         }
-        return results;
-    }
-
-    public async Task<PeriodResult?> GetPeriodTopProductAsync(DateOnly from, DateOnly to)
-    {
-        var orders = await _orderRepository.GetAllAsync();
-        var products = await _productRepository.GetAllAsync();
-
-        var validOrders = ResolveCancelledOrders(orders);
-        // Date range is inclusive on both ends
-        var sales = GetDeduplicatedSales(validOrders)
-            .Where(s => s.Date >= from && s.Date <= to);
 
         var topProduct = GetTopProduct(sales, products);
 
-        return topProduct != null ? new PeriodResult(from, to, topProduct) : null;
+        var periodResult = topProduct != null ? new PeriodResult(from, to, topProduct) : null;
+
+        return new SizzlingHotResult(dailyResult, periodResult);
     }
 
     private static IEnumerable<Order> ResolveCancelledOrders(IEnumerable<Order> orders)
