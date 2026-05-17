@@ -49,17 +49,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Restore backend
+        run: dotnet restore
+      - name: Build backend
+        run: dotnet build --no-restore
+      - name: Start backend
+        run: dotnet run --project backend/src/API --no-build &
+        env:
+          ASPNETCORE_URLS: http://localhost:5000
+          ASPNETCORE_ENVIRONMENT: Development
       - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend
+      - name: Install wait-on
+        run: npm install -g wait-on
+      - name: Wait for backend
+        run: wait-on http://localhost:5000/api/products/sizzling-hot --timeout 30000
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-        working-directory: frontend
-      - name: Start backend
-        run: dotnet run --project src/API &
-        working-directory: backend
-      - name: Wait for backend
-        run: npx wait-on http://localhost:5000/api/products/sizzling-hot
         working-directory: frontend
       - name: Run E2E tests
         run: npx playwright test
