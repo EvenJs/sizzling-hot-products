@@ -13,3 +13,8 @@ export interface PeriodResult {
   to: string;
   product: Product;
 }
+
+export interface SizzlingHotResult {
+  daily: DailyResult[],
+  period: PeriodResult | null,
+}

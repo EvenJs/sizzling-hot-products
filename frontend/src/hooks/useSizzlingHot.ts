@@ -1,31 +1,30 @@
 import { useEffect, useState } from "react";
-import type { DailyResult, PeriodResult } from "../types/api";
+import type { SizzlingHotResult } from "../types/api";
 
-export function useSizzlingHot() {
-  const [daily, setDaily] = useState<DailyResult[]>([]);
-  const [period, setPeriod] = useState<PeriodResult | null>(null);
+export function useSizzlingHot(from: string, to: string) {
+  const [data, setData] = useState<SizzlingHotResult | null>(null)
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!from || !to) return;
+      setLoading(true);
+      setError(null);
+
       try {
         const baseUrl = import.meta.env.VITE_API_URL;
 
-        const [dailyRes, periodRes] = await Promise.all([
-          fetch(`${baseUrl}/api/products/sizzling-hot/daily`),
-          fetch(`${baseUrl}/api/products/sizzling-hot/period`),
-        ]);
+        const response = await fetch(`${baseUrl}/api/products/sizzling-hot?from=${from}&to=${to}`);
 
-        if (!dailyRes.ok || !periodRes.ok) {
+        if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
 
-        const dailyData = await dailyRes.json();
-        const periodData = await periodRes.json();
+        const result = await response.json();
+        setData(result);
 
-        setDaily(dailyData);
-        setPeriod(periodData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -33,7 +32,7 @@ export function useSizzlingHot() {
       }
     }
     fetchData();
-  }, [])
+  }, [from, to])
 
-  return { daily, period, loading, error };
+  return { data, loading, error };
 }

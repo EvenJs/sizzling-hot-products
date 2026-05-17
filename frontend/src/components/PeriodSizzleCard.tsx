@@ -2,7 +2,7 @@ import type { PeriodResult } from "../types/api";
 import { formatDate } from "../utils/dateFormatter";
 
 interface Props {
-  data: PeriodResult | null;
+  data: PeriodResult | null | undefined;
   loading: boolean;
   error: string | null;
 }

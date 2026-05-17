@@ -2,7 +2,7 @@ import type { DailyResult } from "../types/api";
 import { formatDate } from "../utils/dateFormatter";
 
 interface Props {
-  data: DailyResult[];
+  data: DailyResult[] | undefined;
   loading: boolean;
   error: string | null;
 }
@@ -10,7 +10,7 @@ interface Props {
 export function DailySizzleTable({ data, loading, error }: Props) {
   if (loading) return <div className="text-gray-500 p-4">Loading...</div>;
   if (error) return <div className="text-red-500 p-4">{error}</div>;
-  if (data.length === 0)
+  if (!data || data.length === 0)
     return (
       <div className="text-gray-500 p-4">
         No products found for this period.
