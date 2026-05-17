@@ -1,19 +1,35 @@
 # Bunnings Sizzling Hot Products
 
 A full-stack solution for Bunnings' "Sizzling Hot" feature — surfacing the
-most popular product per day and over a rolling 3-day period, based on
+most popular product per day and over a configurable date range, based on
 order data.
+
+---
+
+## Screenshots
+
+### Frontend
+
+![Frontend UI](docs/screenshots/frontend.png)
+
+### Swagger API Documentation
+
+![Swagger UI](docs/screenshots/swagger.png)
 
 ---
 
 ## Stack
 
-| Layer        | Technology                                  | Reason                                                                                       |
-| ------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Backend      | ASP.NET Core Minimal API (.NET 8)           | Lightweight entry point suited to a small API surface area                                   |
-| Architecture | Clean Architecture                          | Decouples business logic from infrastructure; makes the service layer independently testable |
-| Frontend     | Vite + React 19 + TypeScript + Tailwind CSS | Fast dev experience, type safety, utility-first styling                                      |
-| Testing      | xUnit + FluentAssertions                    | Familiar .NET testing stack; FluentAssertions improves test readability                      |
+| Layer            | Technology                                  | Reason                                                                                                            |
+| ---------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Backend          | ASP.NET Core Minimal API (.NET 8)           | Lightweight entry point suited to a small API surface area                                                        |
+| Architecture     | Clean Architecture                          | Decouples business logic from infrastructure; makes the service layer independently testable                      |
+| Frontend         | Vite + React 19 + TypeScript + Tailwind CSS | Fast dev experience, type safety, utility-first styling                                                           |
+| Testing          | xUnit + FluentAssertions + NSubstitute      | Standard .NET testing stack; FluentAssertions improves test readability, NSubstitute for clean repository mocking |
+| Frontend Testing | Vitest + React Testing Library + Playwright | Unit tests for components/hooks/utils, E2E tests for full user flows                                              |
+| API Docs         | Swagger (Swashbuckle)                       | Self-documenting API, interactive testing via Swagger UI                                                          |
+| Container        | Docker + Docker Compose                     | Consistent environment across machines, single command to run full stack                                          |
+| CI/CD            | GitHub Actions                              | Automated backend tests, frontend unit tests, and E2E tests on every push                                         |
 
 ---
 
@@ -30,7 +46,7 @@ API            → Minimal API endpoints. Wires everything together via DI.
 
 This means the business rules in `SizzlingHotService` have zero knowledge of
 how data is stored or served — swapping JSON files for a database requires
-only a new Infrastructure implementation.
+only a new Infrastructure implementation with no changes to the service layer.
 
 ---
 
@@ -50,8 +66,9 @@ only a new Infrastructure implementation.
 ### Date & Scope
 
 - Today's date is fixed at **23/04/2026** as per the brief
-- The 3-day period is **21/04/2026 – 23/04/2026** inclusive
-- Orders outside this date range are excluded from period calculations but
+- The default date range is **21/04/2026 – 23/04/2026** inclusive
+- The date range is configurable via the frontend date picker or API query params
+- Orders outside the queried date range are excluded from calculations but
   still processed for cancellation matching
 
 ### Cancellation Behaviour
@@ -76,6 +93,8 @@ only a new Infrastructure implementation.
   with a descriptive error message
 - Orders with an empty `entries` array are valid (e.g. cancelled orders)
   and are handled without errors
+- The `date` field in orders uses `dd/MM/yyyy` format — a custom
+  `DateOnlyJsonConverter` handles deserialisation from this format
 
 ### Results Behaviour
 
@@ -87,6 +106,7 @@ only a new Infrastructure implementation.
   returned rather than an error
 - If every product ties on a given day, alphabetical ordering is applied
   across all tied products and the first is selected
+- If `from` is after `to`, the API returns 400 Bad Request
 
 ---
 
@@ -94,10 +114,42 @@ only a new Infrastructure implementation.
 
 ### Prerequisites
 
-- .NET 8 SDK
-- Node.js 18+
+#### Running Locally
 
-### Backend
+- .NET 8 SDK
+- Node.js 20+
+
+#### Running with Docker
+
+- Docker Desktop
+
+---
+
+### Option 1 — Docker (Recommended)
+
+The easiest way to run the full stack with a single command:
+
+```bash
+docker compose up --build
+```
+
+| Service  | URL                             |
+| -------- | ------------------------------- |
+| API      | `http://localhost:5000`         |
+| Swagger  | `http://localhost:5000/swagger` |
+| Frontend | `http://localhost:3000`         |
+
+To stop:
+
+```bash
+docker compose down
+```
+
+---
+
+### Option 2 — Running Locally
+
+**Backend**
 
 ```bash
 cd backend
@@ -106,51 +158,76 @@ dotnet run --project src/API
 ```
 
 API runs at `http://localhost:5000`
+Swagger UI at `http://localhost:5000/swagger`
 
-### Frontend
+**Frontend**
+
+Copy the environment file and install dependencies:
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`
+Frontend runs at `http://localhost:3000`
+
+---
+
+### Environment Variables
+
+The frontend requires a `.env` file. A sample is provided:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+| Variable       | Default                 | Description          |
+| -------------- | ----------------------- | -------------------- |
+| `VITE_API_URL` | `http://localhost:5000` | Backend API base URL |
+
+The backend reads configuration from `appsettings.json`. The CORS allowed
+origin can be overridden via the `AllowedOrigins` key in `appsettings.json`
+or as an environment variable.
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint                                                          | Description                             |
-| ------ | ----------------------------------------------------------------- | --------------------------------------- |
-| GET    | `/api/products/sizzling-hot/daily`                                | Top product for each day in the dataset |
-| GET    | `/api/products/sizzling-hot/period?from=21/04/2026&to=23/04/2026` | Top product over a date range           |
+Full interactive documentation available at `http://localhost:5000/swagger`.
+
+| Method | Endpoint                     | Description                                            |
+| ------ | ---------------------------- | ------------------------------------------------------ |
+| GET    | `/api/products/sizzling-hot` | Returns daily and period top products for a date range |
+
+### Query Parameters
+
+| Parameter | Default      | Description            |
+| --------- | ------------ | ---------------------- |
+| `from`    | `2026-04-21` | Start date (inclusive) |
+| `to`      | `2026-04-23` | End date (inclusive)   |
 
 ### Response Shape
 
-**Daily**
-
 ```json
-[
-  {
-    "date": "21/04/2026",
+{
+  "daily": [
+    {
+      "date": "2026-04-21",
+      "product": {
+        "id": "P1",
+        "name": "Ezy Storage 37L Flexi Laundry Basket - White"
+      }
+    }
+  ],
+  "period": {
+    "from": "2026-04-21",
+    "to": "2026-04-23",
     "product": {
       "id": "P1",
       "name": "Ezy Storage 37L Flexi Laundry Basket - White"
     }
-  }
-]
-```
-
-**Period**
-
-```json
-{
-  "from": "21/04/2026",
-  "to": "23/04/2026",
-  "product": {
-    "id": "P3",
-    "name": "Arlec 160W Crystalline Solar Foldable Charging Kit"
   }
 }
 ```
@@ -159,11 +236,16 @@ Frontend runs at `http://localhost:5173`
 
 ## Testing
 
-Unit tests cover `SizzlingHotService` in isolation using in-memory test
-data — no file I/O involved. The repository interfaces are stubbed so tests
-remain fast and deterministic.
+### Backend
 
-### Scenarios Covered
+Unit tests cover `SizzlingHotService` in isolation using in-memory test
+data — no file I/O involved. Repository interfaces are stubbed with
+NSubstitute so tests remain fast and deterministic. Integration tests cover
+the API endpoint using `WebApplicationFactory`.
+
+```bash
+dotnet test
+```
 
 **Core business rules**
 
@@ -182,27 +264,94 @@ remain fast and deterministic.
 - Product ID in order has no match in products list — entry is skipped
 - Empty orders input — returns empty result
 - Empty products input — returns empty result
-- Single product in dataset — returned as winner with no tie-break needed
-- Every product ties — alphabetical ordering applied correctly at scale
+- Every product ties — alphabetical ordering applied correctly
+
+**Integration tests**
+
+- Valid date range returns 200 with correct structure
+- Invalid date range (`from` after `to`) returns 400
+
+### Frontend
+
+Unit tests cover components and hooks in isolation using Vitest and React
+Testing Library.
+
+```bash
+cd frontend && npm test
+```
+
+**Components tested:** `DailySizzleTable`, `PeriodSizzleCard`, `DateRangePicker`
+
+**Hooks tested:** `useDateRange` — validation logic and date state management
+
+**Utilities tested:** `formatDate`
+
+### E2E Tests
+
+Playwright E2E tests cover full user flows across Chromium, Firefox and WebKit.
+
+```bash
+# Requires backend running at http://localhost:5000
+dotnet run --project backend/src/API
+
+cd frontend && npx playwright test
+```
+
+**Scenarios:**
+
+- Page loads with correct default results
+- Validation error appears when `from` is after `to`
+- URL updates when dates change
+- Changing dates updates the displayed results
+
+---
+
+## CI/CD
+
+GitHub Actions runs on every push and pull request to `main`:
+
+```
+push to main
+    ↓
+backend-tests ──┐
+                ├──→ e2e-tests
+frontend-tests ─┘
+```
+
+| Job              | What it runs                                      |
+| ---------------- | ------------------------------------------------- |
+| `backend-tests`  | `dotnet restore` → `dotnet build` → `dotnet test` |
+| `frontend-tests` | `npm ci` → `npm test -- --run`                    |
+| `e2e-tests`      | Starts backend, runs Playwright across 3 browsers |
 
 ---
 
 ## Folder Structure
 
 ```
-bunnings-sizzling-hot/
+sizzling-hot-products/
+├── .github/workflows/ci.yml
+├── docker-compose.yml
+├── docs/screenshots/
 ├── backend/
+│   ├── Dockerfile
 │   ├── src/
-│   │   ├── API/                  # Minimal API, DI wiring, endpoints
-│   │   ├── Application/          # Interfaces, SizzlingHotService
-│   │   ├── Domain/               # Order, OrderEntry, Product models
-│   │   └── Infrastructure/       # JSON repositories, inputs folder
+│   │   ├── API/                  # Minimal API, DI wiring, endpoints, Swagger
+│   │   ├── Application/          # Interfaces, SizzlingHotService, models
+│   │   ├── Domain/               # Order, OrderEntry, Product, OrderStatus
+│   │   └── Infrastructure/       # JSON repositories, DateOnly converter, inputs/
 │   └── tests/
-│       └── Application.Tests/    # xUnit unit tests
+│       └── Application.Tests/    # xUnit unit tests, integration tests, builders
 └── frontend/
+    ├── Dockerfile
+    ├── .env.example
+    ├── e2e/                      # Playwright E2E tests
     └── src/
-        ├── components/           # DailySizzle, PeriodSizzle
-        ├── hooks/                # useProducts data fetching hook
+        ├── components/           # DailySizzleTable, PeriodSizzleCard, DateRangePicker
+        ├── hooks/                # useSizzlingHot, useDateRange
+        ├── test/                 # Vitest unit tests
+        ├── types/                # API response types
+        ├── utils/                # dateFormatter
         └── App.tsx
 ```
 
@@ -215,15 +364,22 @@ bunnings-sizzling-hot/
   with no changes to the service layer
 - **Caching** — cache aggregated results with a short TTL since the
   underlying order data changes infrequently; `IMemoryCache` or Redis
-  depending on scale
+  depending on scale. The repository currently reads from disk on every
+  request
 - **Date flexibility** — make "today" injectable via `TimeProvider` (.NET 8)
   rather than hardcoded, enabling real-time rolling windows and easier
   testing of time-dependent logic
-- **Pagination** — for the daily endpoint when the dataset grows large
+- **TanStack Query** — replace `useEffect` data fetching in the frontend
+  with TanStack Query for built-in caching, automatic refetching, and
+  better error handling
+- **Pagination** — for the daily results when the dataset grows large
 - **Authentication** — secure endpoints with JWT bearer tokens if this were
   customer-facing in production
-- **CI/CD** — GitHub Actions pipeline running tests and linting on every PR
 - **Observability** — structured logging via Serilog and error tracking via
   Sentry to monitor failures in production
 - **Frontend error boundaries** — graceful UI degradation if the API is
   unavailable, rather than a broken state
+- **Format-agnostic repositories** — the current `JsonOptions` is
+  infrastructure-scoped and doesn't leak into Application, but a more
+  generic file reader could support CSV or XML sources without touching
+  the repository interfaces
